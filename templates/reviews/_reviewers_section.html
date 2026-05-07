@@ -1,0 +1,99 @@
+<div id="reviewers-section">
+    <strong style="font-size:.85rem;color:#6c757d;
+                   text-transform:uppercase;letter-spacing:.05em;">
+        Reviewers
+    </strong>
+
+    <div style="margin-top:.5rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+        {% for assignment in cycle.reviewer_assignments.all %}
+        <div style="display:flex;align-items:center;gap:.4rem;
+                    background:#f8f9fa;padding:.3rem .7rem;
+                    border-radius:20px;font-size:.85rem;">
+            <img src="{{ assignment.reviewer.avatar }}"
+                 width="20" height="20" style="border-radius:50%;">
+            {{ assignment.reviewer.display_name }}
+
+            {% if assignment.decision %}
+                <span style="color:{% if assignment.decision == 'approved' %}#065f46{% elif assignment.decision == 'changes_requested' %}#991b1b{% else %}#6c757d{% endif %};">
+                    · {{ assignment.get_decision_display }}
+                </span>
+            {% endif %}
+
+            {% if is_author %}
+            <button
+                hx-post="{% url 'reviews:remove_reviewer' cycle.pk assignment.reviewer.pk %}"
+                hx-target="#reviewers-section"
+                hx-swap="outerHTML"
+                hx-confirm="Remove {{ assignment.reviewer.display_name }} as reviewer?"
+                style="background:none;border:none;cursor:pointer;
+                       color:#adb5bd;font-size:.85rem;padding:0 2px;
+                       line-height:1;"
+                title="Remove reviewer">
+                ×
+            </button>
+            {% endif %}
+        </div>
+        {% empty %}
+            <span style="color:#6c757d;font-size:.85rem;">
+                No reviewers assigned yet.
+            </span>
+        {% endfor %}
+
+        {% if is_author or is_reviewer %}
+        <button
+            onclick="toggleReviewerSearch()"
+            style="background:#e9ecef;border:1px dashed #ced4da;
+                   border-radius:20px;padding:.3rem .8rem;
+                   font-size:.85rem;cursor:pointer;color:#495057;">
+            + Add Reviewer
+        </button>
+        {% endif %}
+    </div>
+
+    {% if is_author or is_reviewer %}
+    <div id="reviewer-search-box"
+         style="display:none;margin-top:.75rem;max-width:360px;">
+
+        <input
+            type="text"
+            placeholder="Search by name or GitHub username..."
+            style="width:100%;padding:.5rem;border:1px solid #dee2e6;
+                   border-radius:6px;font-size:.9rem;"
+            hx-get="{% url 'reviews:search_reviewers' cycle.pk %}"
+            hx-trigger="keyup changed delay:300ms"
+            hx-target="#reviewer-search-results"
+            hx-swap="innerHTML"
+            name="q"
+            autocomplete="off"
+            id="reviewer-search-input">
+
+        <div id="reviewer-search-results"
+             style="border:1px solid #dee2e6;border-radius:6px;
+                    margin-top:4px;background:white;
+                    max-height:200px;overflow-y:auto;">
+        </div>
+
+        <button onclick="toggleReviewerSearch()"
+                style="margin-top:.5rem;font-size:.8rem;
+                       color:#6c757d;background:none;border:none;
+                       cursor:pointer;text-decoration:underline;">
+            Cancel
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleReviewerSearch() {
+    const box = document.getElementById('reviewer-search-box');
+    const input = document.getElementById('reviewer-search-input');
+    if (box.style.display === 'none') {
+        box.style.display = 'block';
+        if (input) input.focus();
+    } else {
+        box.style.display = 'none';
+        if (input) input.value = '';
+        document.getElementById('reviewer-search-results').innerHTML = '';
+    }
+}
+</script>

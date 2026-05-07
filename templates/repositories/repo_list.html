@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Repositories — CodeReview{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+    <h1>Repositories</h1>
+    <a href="{% url 'repositories:connect' %}" class="btn btn-primary">
+        + Connect Repository
+    </a>
+</div>
+
+{% if repositories %}
+    {% for repo in repositories %}
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <a href="{% url 'repositories:detail' repo.pk %}"
+               style="font-weight:500;font-size:1.05rem;color:#4361ee;text-decoration:none;">
+                {{ repo.full_name }}
+            </a>
+            {% if repo.description %}
+                <p style="color:#6c757d;font-size:.9rem;margin-top:.25rem;">
+                    {{ repo.description }}
+                </p>
+            {% endif %}
+            <p style="font-size:.8rem;color:#adb5bd;margin-top:.25rem;">
+                Connected {{ repo.created_at|date:"M d, Y" }} ·
+                {% if repo.is_webhook_active %}
+                    <span style="color:#065f46;">● Webhook active</span>
+                {% else %}
+                    <span style="color:#dc2626;">● Webhook not configured</span>
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'repositories:detail' repo.pk %}"
+               class="btn btn-secondary" style="font-size:.85rem;">
+                Configure
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card" style="text-align:center;padding:3rem;">
+        <p style="color:#6c757d;margin-bottom:1rem;">
+            No repositories connected yet.
+        </p>
+        <a href="{% url 'repositories:connect' %}" class="btn btn-primary">
+            Connect your first repository
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

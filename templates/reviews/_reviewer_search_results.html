@@ -1,0 +1,36 @@
+{% if users %}
+    {% for user in users %}
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:.6rem .75rem;border-bottom:1px solid #f1f3f5;
+                font-size:.9rem;">
+        <div style="display:flex;align-items:center;gap:.6rem;">
+            <img src="{{ user.avatar }}" width="28" height="28"
+                 style="border-radius:50%;">
+            <div>
+                <div style="font-weight:500;">{{ user.display_name }}</div>
+                <div style="font-size:.75rem;color:#6c757d;">
+                    @{{ user.github_username }}
+                    · {{ user.get_role_display }}
+                </div>
+            </div>
+        </div>
+
+        <button
+            hx-post="{% url 'reviews:assign_reviewer' cycle.pk %}"
+            hx-vals='{"user_id": "{{ user.pk }}"}'
+            hx-target="#reviewers-section"
+            hx-swap="outerHTML"
+            class="btn btn-primary"
+            style="font-size:.8rem;padding:.3rem .75rem;">
+            Assign
+        </button>
+    </div>
+    {% endfor %}
+{% else %}
+    <div style="padding:.75rem;text-align:center;
+                color:#6c757d;font-size:.85rem;">
+        No reviewers found matching that search.
+        <br>
+        <small>Only users with Reviewer or Admin role appear here.</small>
+    </div>
+{% endif %}

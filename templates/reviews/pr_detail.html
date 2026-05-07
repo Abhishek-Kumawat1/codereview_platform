@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% block title %}{{ pr.title }} — CodeReview{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:1.5rem;">
+    <a href="{% url 'reviews:pr_list' %}"
+       style="color:#6c757d;text-decoration:none;font-size:.9rem;">
+        ← All pull requests
+    </a>
+</div>
+
+<div class="card" style="margin-bottom:1rem;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+            <h1 style="font-size:1.4rem;margin-bottom:.5rem;">
+                {{ pr.title }}
+                <span style="color:#6c757d;font-weight:400;">
+                    #{{ pr.github_pr_number }}
+                </span>
+            </h1>
+            <p style="color:#6c757d;font-size:.9rem;">
+                {{ pr.repository.full_name }} ·
+                {{ pr.head_branch }} → {{ pr.base_branch }} ·
+                opened by {{ pr.author.display_name }} ·
+                {{ pr.created_at|date:"M d, Y" }}
+            </p>
+        </div>
+        <div>
+            {% include "reviews/_status_badge.html" with status=pr.status %}
+            <a href="{{ pr.github_url }}" target="_blank"
+               style="margin-left:.5rem;font-size:.85rem;color:#4361ee;">
+                View on GitHub →
+            </a>
+        </div>
+    </div>
+
+    {% if pr.body %}
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e9ecef;color:#495057;">
+        {{ pr.body|linebreaks }}
+    </div>
+    {% endif %}
+</div>
+
+{% if current_cycle %}
+<div class="card" style="margin-bottom:1rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h2 style="font-size:1.1rem;">
+            Review Cycle {{ current_cycle.cycle_number }}
+        </h2>
+        <!--
+        -->
+        <div style="display:flex;align-items:center;gap:1rem;">
+        <div id="cycle-status">
+            {% include "reviews/_cycle_status.html" with cycle=current_cycle %}
+        </div>
+
+         <!-- AI Review trigger button -->
+        <button hx-post="{% url 'reviews:trigger_ai_review' current_cycle.pk %}"
+                hx-target="#ai-review-status"
+                hx-swap="innerHTML"
+                class="btn"
+                style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;font-size:.8rem;">
+            🤖 Run AI Review
+        </button>
+        <span id="ai-review-status"></span>
+        </div>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+        <strong style="font-size:.85rem;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">
+        {% include "reviews/_reviewers_section.html" with cycle=current_cycle is_author=is_author is_reviewer=is_reviewer %}
+        </strong>
+        <div style="margin-top:.5rem;display:flex;gap:.5rem;flex-wrap:wrap;">
+            {% for assignment in current_cycle.reviewer_assignments.all %}
+            <div style="display:flex;align-items:center;gap:.4rem;background:#f8f9fa;padding:.3rem .7rem;border-radius:20px;font-size:.85rem;">
+                <img src="{{ assignment.reviewer.avatar }}" width="20" height="20"
+                     style="border-radius:50%;">
+                {{ assignment.reviewer.display_name }}
+                {% if assignment.decision %}
+                    <span style="color:{% if assignment.decision == 'approved' %}#065f46{% elif assignment.decision == 'changes_requested' %}#991b1b{% else %}#6c757d{% endif %};">
+                        · {{ assignment.get_decision_display }}
+                    </span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if is_reviewer %}
+    <div style="padding:1rem;background:#f8f9fa;border-radius:8px;margin-bottom:1rem;">
+        <strong style="font-size:.9rem;">Submit your review decision</strong>
+        <div style="margin-top:.75rem;display:flex;gap:.5rem;">
+            <form hx-post="{% url 'reviews:submit_decision' current_cycle.pk %}"
+                  hx-target="#cycle-status"
+                  hx-swap="innerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="decision" value="approved">
+                <button type="submit" class="btn"
+                        style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;">
+                    ✓ Approve
+                </button>
+            </form>
+            <form hx-post="{% url 'reviews:submit_decision' current_cycle.pk %}"
+                  hx-target="#cycle-status"
+                  hx-swap="innerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="decision" value="changes_requested">
+                <button type="submit" class="btn"
+                        style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;">
+                    ✗ Request Changes
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+    <strong style="font-size:.85rem;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">
+        Comments
+    </strong>
+    <div style="display:flex;align-items:center;gap:1rem;">
+        <span id="typing-indicator"
+              style="font-size:.8rem;color:#6c757d;display:none;">
+        </span>
+        <span id="ws-status"
+              style="font-size:.8rem;color:#6c757d;">
+        </span>
+    </div>
+</div>
+
+<div id="comments-list" style="margin-bottom:1rem;">
+    {% for comment in current_cycle.comments.all %}
+        {% include "reviews/_comment.html" %}
+    {% empty %}
+        <p class="no-comments" style="color:#6c757d;font-size:.9rem;">
+            No comments yet. Be the first to review.
+        </p>
+    {% endfor %}
+</div>
+
+<form data-comment-form
+      hx-post="{% url 'reviews:add_comment' current_cycle.pk %}"
+      hx-target="#comments-list"
+      hx-swap="beforeend"
+      hx-on::after-request="this.reset()">
+    {% csrf_token %}
+    <textarea data-comment-input
+              name="body"
+              placeholder="Leave a comment... (Shift+Enter for new line)"
+              rows="3"
+              style="width:100%;padding:.5rem;border:1px solid #dee2e6;
+                     border-radius:6px;resize:vertical;"
+              required></textarea>
+    <div style="margin-top:.5rem;display:flex;justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary">
+            Add Comment
+        </button>
+    </div>
+</form>
+</div>
+{% else %}
+<div class="card">
+    <p style="color:#6c757d;">No active review cycle for this PR.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if current_cycle %}
+<script>
+(function() {
+    const CYCLE_ID = "{{ current_cycle.pk }}";
+    const WS_URL = `ws://${window.location.host}/ws/reviews/${CYCLE_ID}/comments/`;
+    const RECONNECT_DELAY_MS = 3000;
+    const TYPING_DEBOUNCE_MS = 1000;
+
+    let socket = null;
+    let reconnectTimer = null;
+    let typingTimer = null;
+    let isTyping = false;
+
+    const commentsList = document.getElementById('comments-list');
+    const commentForm = document.querySelector('[data-comment-form]');
+    const commentInput = document.querySelector('[data-comment-input]');
+    const connectionStatus = document.getElementById('ws-status');
+    const typingIndicator = document.getElementById('typing-indicator');
+
+    function connect() {
+        socket = new WebSocket(WS_URL);
+
+        socket.onopen = function(e) {
+            console.log('WebSocket connected');
+            setStatus('connected');
+            clearTimeout(reconnectTimer);
+        };
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            handleMessage(data);
+        };
+
+        socket.onclose = function(e) {
+            if (e.code === 4001) {
+                setStatus('auth_error');
+                return;
+            }
+            if (e.code === 4003) {
+                setStatus('access_error');
+                return;
+            }
+            setStatus('reconnecting');
+            reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
+        };
+
+        socket.onerror = function(e) {
+            console.error('WebSocket error:', e);
+            setStatus('error');
+        };
+    }
+
+    function handleMessage(data) {
+        switch(data.type) {
+            case 'connection_established':
+                console.log('Connection confirmed:', data.message);
+                break;
+
+            case 'new_comment':
+                appendComment(data);
+                break;
+
+            case 'typing':
+                showTypingIndicator(data.user_name, data.is_typing);
+                break;
+
+            case 'cycle_status_update':
+                updateCycleStatus(data);
+                break;
+
+            case 'error':
+                console.error('Server error:', data.message);
+                break;
+        }
+    }
+
+    function appendComment(data) {
+        const placeholder = commentsList.querySelector('.no-comments');
+        if (placeholder) placeholder.remove();
+
+        const div = document.createElement('div');
+        div.className = 'comment';
+        div.id = `comment-${data.comment_id}`;
+        div.style.cssText = 'padding:.75rem 0;border-bottom:1px solid #f1f3f5;display:flex;gap:.75rem;';
+
+        const avatarSrc = data.author_avatar ||
+            `https://api.dicebear.com/7.x/initials/svg?seed=${data.author_name}`;
+
+        const aiBadge = data.is_ai_generated
+            ? '<span style="background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:10px;font-size:.75rem;">AI reviewer</span>'
+            : '';
+
+        const inlineBadge = data.file_path
+            ? `<span style="background:#f1f3f5;color:#495057;padding:1px 6px;border-radius:4px;font-size:.75rem;font-family:monospace;">${data.file_path}${data.line_number ? ':' + data.line_number : ''}</span>`
+            : '';
+
+        const bodyHtml = data.body
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/\n/g,'<br>');
+
+        div.innerHTML = `
+            <img src="${avatarSrc}" width="32" height="32"
+                 style="border-radius:50%;flex-shrink:0;margin-top:2px;"
+                 onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${data.author_name}'">
+            <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">
+                    <strong style="font-size:.9rem;">${escapeHtml(data.author_name)}</strong>
+                    ${aiBadge}
+                    ${inlineBadge}
+                    <span style="color:#6c757d;font-size:.8rem;">just now</span>
+                </div>
+                <div style="color:#212529;font-size:.9rem;line-height:1.5;">
+                    ${bodyHtml}
+                </div>
+            </div>
+        `;
+
+        commentsList.appendChild(div);
+
+        div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    function showTypingIndicator(userName, isTyping) {
+        if (!typingIndicator) return;
+
+        if (isTyping) {
+            typingIndicator.textContent = `${userName} is typing...`;
+            typingIndicator.style.display = 'block';
+        } else {
+            typingIndicator.textContent = '';
+            typingIndicator.style.display = 'none';
+        }
+    }
+
+    function updateCycleStatus(data) {
+        const statusContainer = document.getElementById('cycle-status');
+        if (!statusContainer) return;
+
+        const statusStyles = {
+            'pending':            { bg: '#f3f4f6', color: '#374151', label: 'Pending' },
+            'in_progress':        { bg: '#fef3c7', color: '#92400e', label: 'In Progress' },
+            'approved':           { bg: '#d1fae5', color: '#065f46', label: 'Approved' },
+            'changes_requested':  { bg: '#fee2e2', color: '#991b1b', label: 'Changes Requested' },
+            'cancelled':          { bg: '#f3f4f6', color: '#374151', label: 'Cancelled' },
+        };
+
+        const style = statusStyles[data.status] || statusStyles['pending'];
+
+        statusContainer.innerHTML = `
+            <div style="display:flex;align-items:center;gap:.5rem;">
+                <span style="background:${style.bg};color:${style.color};
+                             padding:2px 8px;border-radius:12px;font-size:.8rem;">
+                    ${style.label}
+                </span>
+                <span style="font-size:.85rem;color:#6c757d;">
+                    ${data.approved_count} approved ·
+                    ${data.changes_requested_count} changes requested
+                </span>
+            </div>
+        `;
+    }
+
+    function setStatus(status) {
+        if (!connectionStatus) return;
+
+        const styles = {
+            connected:    { text: '● Live',         color: '#065f46' },
+            reconnecting: { text: '○ Reconnecting…', color: '#92400e' },
+            error:        { text: '● Error',         color: '#991b1b' },
+            auth_error:   { text: '● Auth error',    color: '#991b1b' },
+            access_error: { text: '● No access',     color: '#991b1b' },
+        };
+
+        const s = styles[status] || styles.error;
+        connectionStatus.textContent = s.text;
+        connectionStatus.style.color = s.color;
+    }
+
+    if (commentForm && commentInput) {
+        commentForm.addEventListener('submit', function(e) {
+            const body = commentInput.value.trim();
+
+            if (!body) return;
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                e.preventDefault();
+
+                socket.send(JSON.stringify({
+                    type: 'new_comment',
+                    body: body,
+                }));
+
+                commentInput.value = '';
+                sendTypingStatus(false);
+            }
+        });
+
+        commentInput.addEventListener('input', function() {
+            if (!isTyping) {
+                isTyping = true;
+                sendTypingStatus(true);
+            }
+
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(function() {
+                isTyping = false;
+                sendTypingStatus(false);
+            }, TYPING_DEBOUNCE_MS);
+        });
+    }
+
+    function sendTypingStatus(typing) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'typing',
+                is_typing: typing,
+            }));
+        }
+    }
+
+    connect();
+})();
+</script>
+{% endif %}
+{% endblock %}

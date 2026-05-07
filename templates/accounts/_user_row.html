@@ -1,0 +1,73 @@
+<tr id="user-row-{{ u.pk }}"
+    style="border-bottom:1px solid #f1f3f5;">
+    <td style="padding:.75rem .5rem;">
+        <div style="display:flex;align-items:center;gap:.6rem;">
+            <img src="{{ u.avatar }}" width="32" height="32"
+                 style="border-radius:50%;">
+            <div>
+                <div style="font-weight:500;font-size:.9rem;">
+                    {{ u.display_name }}
+                    {% if u == current_user %}
+                        <span style="font-size:.75rem;color:#6c757d;">(you)</span>
+                    {% endif %}
+                </div>
+                <div style="font-size:.75rem;color:#6c757d;">
+                    {{ u.email }}
+                </div>
+            </div>
+        </div>
+    </td>
+
+    <td style="padding:.75rem .5rem;font-size:.85rem;color:#6c757d;">
+        {% if u.github_username %}
+            <a href="https://github.com/{{ u.github_username }}"
+               target="_blank"
+               style="color:#4361ee;text-decoration:none;">
+                @{{ u.github_username }}
+            </a>
+        {% else %}
+            —
+        {% endif %}
+    </td>
+
+    <td style="padding:.75rem .5rem;font-size:.85rem;color:#6c757d;">
+        {{ u.date_joined|date:"M d, Y" }}
+    </td>
+
+    <td style="padding:.75rem .5rem;">
+        {% if u.role == 'admin' %}
+            <span style="background:#EEEDFE;color:#534AB7;padding:2px 8px;
+                         border-radius:12px;font-size:.8rem;">Admin</span>
+        {% elif u.role == 'reviewer' %}
+            <span style="background:#E1F5EE;color:#0F6E56;padding:2px 8px;
+                         border-radius:12px;font-size:.8rem;">Reviewer</span>
+        {% else %}
+            <span style="background:#f3f4f6;color:#374151;padding:2px 8px;
+                         border-radius:12px;font-size:.8rem;">Author</span>
+        {% endif %}
+    </td>
+
+    <td style="padding:.75rem .5rem;">
+        <form hx-post="{% url 'accounts:update_role' u.pk %}"
+              hx-target="#user-row-{{ u.pk }}"
+              hx-swap="outerHTML"
+              style="display:flex;gap:.4rem;align-items:center;">
+            {% csrf_token %}
+            <select name="role"
+                    style="padding:.3rem .5rem;border:1px solid #dee2e6;
+                           border-radius:6px;font-size:.85rem;">
+                {% for value, label in roles %}
+                    <option value="{{ value }}"
+                            {% if u.role == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit"
+                    class="btn btn-primary"
+                    style="font-size:.8rem;padding:.3rem .75rem;">
+                Update
+            </button>
+        </form>
+    </td>
+</tr>

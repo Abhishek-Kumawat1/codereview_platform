@@ -1,0 +1,27 @@
+
+<form hx-post="{% url 'accounts:profile' %}" 
+      hx-target="this" 
+      hx-swap="outerHTML"
+      style="display:flex;flex-direction:column;gap:1rem;">
+    {% csrf_token %}
+    
+    <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <label for="id_bio" style="font-weight:500;">Bio</label>
+        <textarea id="id_bio" name="bio" rows="3" 
+                  style="padding:.5rem;border:1px solid #ccc;border-radius:4px;"
+                  placeholder="Tell us about yourself...">{{ user.bio|default_if_none:"" }}</textarea>
+    </div>
+    
+    <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <label for="id_location" style="font-weight:500;">Location</label>
+        <input type="text" id="id_location" name="location" 
+               value="{{ user.location|default_if_none:"" }}"
+               style="padding:.5rem;border:1px solid #ccc;border-radius:4px;"
+               placeholder="Your location">
+    </div>
+    
+    <button type="submit" 
+            style="padding:.75rem 1.5rem;background:#0d6efd;color:white;border:none;border-radius:4px;cursor:pointer;">
+        Update Profile
+    </button>
+</form>

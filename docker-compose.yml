@@ -1,0 +1,122 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    environment:
+      POSTGRES_DB: codereview
+      POSTGRES_USER: codereview_user
+      POSTGRES_PASSWORD: codereview_pass
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codereview_user -d codereview"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  django:
+    build: .
+
+    command: >
+      sh -c "python manage.py migrate --settings=config.settings.development &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --reload"
+
+    volumes:
+      - .:/app
+
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+      - DATABASE_URL=postgres://codereview_user:codereview_pass@db:5432/codereview
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DEBUG=True
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    ports:
+      - "8000:8000"
+
+  daphne:
+    build: .
+
+    command: daphne -b 0.0.0.0 -p 8001 config.asgi:application
+
+    volumes:
+      - .:/app
+
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+      - DATABASE_URL=postgres://codereview_user:codereview_pass@db:5432/codereview
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DEBUG=True
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    ports:
+      - "8001:8001"
+
+  celery:
+    build: .
+
+    command: celery -A config.celery worker --loglevel=info
+
+    volumes:
+      - .:/app
+
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+      - DATABASE_URL=postgres://codereview_user:codereview_pass@db:5432/codereview
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DEBUG=True
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+
+    ports:
+      - "80:80"
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./static:/app/static
+
+    depends_on:
+      - django
+      - daphne
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+  
+
+volumes:
+  postgres_data:

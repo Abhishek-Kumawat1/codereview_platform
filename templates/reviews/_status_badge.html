@@ -1,0 +1,13 @@
+{% if status == 'open' %}
+    <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:12px;font-size:.8rem;">Open</span>
+{% elif status == 'in_review' %}
+    <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:.8rem;">In Review</span>
+{% elif status == 'approved' %}
+    <span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:.8rem;">Approved</span>
+{% elif status == 'changes_requested' %}
+    <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:.8rem;">Changes Requested</span>
+{% elif status == 'merged' %}
+    <span style="background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:12px;font-size:.8rem;">Merged</span>
+{% else %}
+    <span style="background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:12px;font-size:.8rem;">{{ status }}</span>
+{% endif %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}User Management — CodeReview{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;
+            align-items:center;margin-bottom:1.5rem;">
+    <div>
+        <h1 style="margin-bottom:.25rem;">User Management</h1>
+        <p style="color:#6c757d;">
+            Manage roles for all platform users.
+            Only Reviewers and Admins can be assigned to review cycles.
+        </p>
+    </div>
+    <a href="{% url 'accounts:dashboard' %}"
+       style="color:#6c757d;font-size:.9rem;text-decoration:none;">
+        ← Dashboard
+    </a>
+</div>
+
+<div class="card">
+    <table style="width:100%;border-collapse:collapse;">
+        <thead>
+            <tr style="text-align:left;border-bottom:2px solid #e9ecef;">
+                <th style="padding:.75rem .5rem;">User</th>
+                <th style="padding:.75rem .5rem;">GitHub</th>
+                <th style="padding:.75rem .5rem;">Joined</th>
+                <th style="padding:.75rem .5rem;">Current Role</th>
+                <th style="padding:.75rem .5rem;">Change Role</th>
+            </tr>
+        </thead>
+        <tbody id="users-table-body">
+            {% for u in users %}
+                {% include "accounts/_user_row.html" with u=u roles=roles current_user=request.user %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card" style="margin-top:1rem;">
+    <h3 style="font-size:.95rem;margin-bottom:.75rem;">Role Permissions</h3>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+        <div style="padding:.75rem;background:#f8f9fa;border-radius:6px;">
+            <strong style="color:#374151;">Author</strong>
+            <p style="font-size:.85rem;color:#6c757d;margin-top:.25rem;">
+                Can submit PRs and view their own review cycles.
+                Cannot be assigned as a reviewer.
+            </p>
+        </div>
+        <div style="padding:.75rem;background:#E1F5EE;border-radius:6px;">
+            <strong style="color:#0F6E56;">Reviewer</strong>
+            <p style="font-size:.85rem;color:#0F6E56;margin-top:.25rem;">
+                Can be assigned to review cycles, leave comments,
+                and submit Approve/Request Changes decisions.
+            </p>
+        </div>
+        <div style="padding:.75rem;background:#EEEDFE;border-radius:6px;">
+            <strong style="color:#534AB7;">Admin</strong>
+            <p style="font-size:.85rem;color:#534AB7;margin-top:.25rem;">
+                Full access. Can manage users, view all PRs,
+                and perform all reviewer actions.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

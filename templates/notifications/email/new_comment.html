@@ -1,0 +1,25 @@
+{% extends "notifications/email/base_email.html" %}
+{% block content %}
+<h2>New comment on PR #{{ pr.github_pr_number }}</h2>
+
+<div class="meta">
+    <strong>{{ pr.title }}</strong><br>
+    {{ pr.repository.full_name }} · {{ pr.head_branch }} → {{ pr.base_branch }}
+</div>
+
+<p>
+    <strong>{{ comment_author }}</strong> left a comment:
+</p>
+
+<blockquote style="border-left:3px solid #4361ee;margin:0;padding:8px 16px;color:#495057;background:#f8f9fa;border-radius:0 6px 6px 0;">
+    {{ comment_body }}
+</blockquote>
+
+{% if file_path %}
+<p style="font-size:.85rem;color:#6c757d;">
+    On <code>{{ file_path }}</code>{% if line_number %} line {{ line_number }}{% endif %}
+</p>
+{% endif %}
+
+<a href="{{ action_url }}" class="btn">View Comment →</a>
+{% endblock %}

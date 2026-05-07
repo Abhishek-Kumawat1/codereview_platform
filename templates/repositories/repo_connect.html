@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Connect Repository — CodeReview{% endblock %}
+
+{% block content %}
+<div style="max-width:520px;margin:0 auto;">
+    <h1 style="margin-bottom:.5rem;">Connect a Repository</h1>
+    <p style="color:#6c757d;margin-bottom:2rem;">
+        Enter your GitHub repository name to connect it to CodeReview.
+    </p>
+
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;font-weight:500;margin-bottom:.5rem;">
+                    Repository name
+                </label>
+                <input type="text"
+                       name="full_name"
+                       placeholder="username/repository"
+                       style="width:100%;padding:.6rem;border:1px solid #dee2e6;border-radius:6px;font-size:1rem;"
+                       required>
+                <p style="font-size:.8rem;color:#6c757d;margin-top:.4rem;">
+                    Format: <code>owner/repo</code> — e.g. <code>torvalds/linux</code>
+                </p>
+            </div>
+            <button type="submit" class="btn btn-primary">Connect Repository</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

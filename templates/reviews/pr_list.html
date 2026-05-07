@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Pull Requests — CodeReview{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+    <h1>Pull Requests</h1>
+</div>
+
+<!-- PRs I authored -->
+<div class="card" style="margin-bottom:1.5rem;">
+    <h2 style="margin-bottom:1rem;font-size:1.1rem;">Authored by you</h2>
+    {% if authored_prs %}
+        <table style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr style="text-align:left;border-bottom:2px solid #e9ecef;">
+                    <th style="padding:.5rem;">PR</th>
+                    <th style="padding:.5rem;">Repository</th>
+                    <th style="padding:.5rem;">Status</th>
+                    <th style="padding:.5rem;">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pr in authored_prs %}
+                <tr style="border-bottom:1px solid #f1f3f5;"
+                    onclick="window.location='{% url 'reviews:pr_detail' pr.pk %}'"
+                    style="cursor:pointer;">
+                    <td style="padding:.75rem .5rem;">
+                        <a href="{% url 'reviews:pr_detail' pr.pk %}"
+                           style="font-weight:500;color:#4361ee;text-decoration:none;">
+                            #{{ pr.github_pr_number }} {{ pr.title }}
+                        </a>
+                    </td>
+                    <td style="padding:.75rem .5rem;color:#6c757d;">
+                        {{ pr.repository.full_name }}
+                    </td>
+                    <td style="padding:.75rem .5rem;">
+                        {% include "reviews/_status_badge.html" with status=pr.status %}
+                    </td>
+                    <td style="padding:.75rem .5rem;color:#6c757d;font-size:.85rem;">
+                        {{ pr.created_at|date:"M d, Y" }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color:#6c757d;">No pull requests yet.</p>
+    {% endif %}
+</div>
+
+<!-- PRs I'm reviewing -->
+<div class="card">
+    <h2 style="margin-bottom:1rem;font-size:1.1rem;">Pending your review</h2>
+    {% if reviewing_prs %}
+        {% for pr in reviewing_prs %}
+        <div style="padding:.75rem 0;border-bottom:1px solid #f1f3f5;">
+            <a href="{% url 'reviews:pr_detail' pr.pk %}"
+               style="font-weight:500;color:#4361ee;text-decoration:none;">
+                {{ pr.repository.full_name }} — #{{ pr.github_pr_number }} {{ pr.title }}
+            </a>
+            <span style="margin-left:.75rem;color:#6c757d;font-size:.85rem;">
+                by {{ pr.author.display_name }}
+            </span>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color:#6c757d;">No reviews assigned to you.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "notifications/email/base_email.html" %}
+{% block content %}
+<h2>
+    {% if decision == 'approved' %}
+        ✓ Your PR was approved
+    {% else %}
+        Changes requested on your PR
+    {% endif %}
+</h2>
+
+<div class="meta">
+    <strong>{{ pr.title }}</strong><br>
+    {{ pr.repository.full_name }}
+</div>
+
+<p>
+    <strong>{{ reviewer_name }}</strong>
+    {% if decision == 'approved' %}
+        approved your pull request.
+    {% else %}
+        requested changes on your pull request.
+    {% endif %}
+</p>
+
+<a href="{{ action_url }}" class="btn">View Review →</a>
+{% endblock %}

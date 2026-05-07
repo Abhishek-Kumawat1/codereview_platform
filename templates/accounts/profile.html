@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Profile — CodeReview{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+    <h1 style="margin-bottom:2rem;">Your Profile</h1>
+
+    <div class="card">
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+            <img src="{{ user.avatar }}" width="72" height="72"
+                 style="border-radius:50%;border:3px solid #e9ecef;">
+            <div>
+                <h2>{{ user.display_name }}</h2>
+                <p style="color:#6c757d;">{{ user.email }}</p>
+                {% if user.github_username %}
+                    <a href="https://github.com/{{ user.github_username }}"
+                       target="_blank" style="font-size:.85rem;">
+                        @{{ user.github_username }}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% include "accounts/_profile_form.html" %}
+    </div>
+</div>
+{% endblock %}

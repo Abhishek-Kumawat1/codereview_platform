@@ -1,0 +1,16 @@
+{% extends "notifications/email/base_email.html" %}
+{% block content %}
+<h2>You've been assigned to review a PR</h2>
+
+<div class="meta">
+    <strong>{{ pr.title }}</strong><br>
+    {{ pr.repository.full_name }} · by {{ pr.author.display_name }}
+</div>
+
+<p>
+    You've been assigned as a reviewer. Please review the changes
+    and submit your feedback.
+</p>
+
+<a href="{{ action_url }}" class="btn">Start Review →</a>
+{% endblock %}

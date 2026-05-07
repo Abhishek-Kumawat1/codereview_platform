@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{{ repo.full_name }} — CodeReview{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:1rem;">
+    <a href="{% url 'repositories:list' %}"
+       style="color:#6c757d;text-decoration:none;font-size:.9rem;">
+        ← All repositories
+    </a>
+</div>
+
+<h1 style="margin-bottom:.25rem;">{{ repo.full_name }}</h1>
+<p style="color:#6c757d;margin-bottom:2rem;">
+    Default branch: <code>{{ repo.default_branch }}</code>
+</p>
+
+<!-- Webhook configuration -->
+<div class="card" style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1.1rem;margin-bottom:1rem;">
+        GitHub Webhook Configuration
+    </h2>
+
+    <p style="color:#495057;margin-bottom:1rem;">
+        Add this webhook to your GitHub repository under
+        <strong>Settings → Webhooks → Add webhook</strong>
+    </p>
+
+    <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:.85rem;font-weight:500;
+                      color:#6c757d;text-transform:uppercase;letter-spacing:.05em;
+                      margin-bottom:.4rem;">
+            Payload URL
+        </label>
+        <div style="display:flex;gap:.5rem;">
+            <input type="text"
+                   value="{{ webhook_url }}"
+                   readonly
+                   style="flex:1;padding:.5rem;border:1px solid #dee2e6;
+                          border-radius:6px;background:#f8f9fa;font-family:monospace;
+                          font-size:.85rem;">
+            <button onclick="navigator.clipboard.writeText('{{ webhook_url }}')"
+                    class="btn btn-secondary" style="font-size:.85rem;">
+                Copy
+            </button>
+        </div>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:.85rem;font-weight:500;
+                      color:#6c757d;text-transform:uppercase;letter-spacing:.05em;
+                      margin-bottom:.4rem;">
+            Secret
+        </label>
+        <div style="display:flex;gap:.5rem;">
+            <input type="password"
+                   value="{{ repo.webhook_secret }}"
+                   id="webhook-secret"
+                   readonly
+                   style="flex:1;padding:.5rem;border:1px solid #dee2e6;
+                          border-radius:6px;background:#f8f9fa;font-family:monospace;
+                          font-size:.85rem;">
+            <button onclick="toggleSecret()" class="btn btn-secondary"
+                    style="font-size:.85rem;">
+                Show
+            </button>
+            <button onclick="navigator.clipboard.writeText('{{ repo.webhook_secret }}')"
+                    class="btn btn-secondary" style="font-size:.85rem;">
+                Copy
+            </button>
+        </div>
+    </div>
+
+    <div style="background:#f8f9fa;border-radius:6px;padding:1rem;font-size:.85rem;color:#495057;">
+        <strong>Content type:</strong> application/json<br>
+        <strong>Events:</strong> Select "Pull requests" only<br>
+        <strong>Active:</strong> ✓ checked
+    </div>
+</div>
+
+<!-- Recent PRs from this repo -->
+<div class="card">
+    <h2 style="font-size:1.1rem;margin-bottom:1rem;">
+        Pull Requests
+    </h2>
+    {% with prs=repo.pull_requests.all %}
+        {% if prs %}
+            {% for pr in prs %}
+            <div style="padding:.75rem 0;border-bottom:1px solid #f1f3f5;">
+                <a href="{% url 'reviews:pr_detail' pr.pk %}"
+                   style="font-weight:500;color:#4361ee;text-decoration:none;">
+                    #{{ pr.github_pr_number }} {{ pr.title }}
+                </a>
+                <span style="margin-left:.75rem;">
+                    {% include "reviews/_status_badge.html" with status=pr.status %}
+                </span>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color:#6c757d;">
+                No pull requests yet. Configure the webhook above and
+                open a PR on GitHub to get started.
+            </p>
+        {% endif %}
+    {% endwith %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleSecret() {
+    const input = document.getElementById('webhook-secret');
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+</script>
+{% endblock %}
